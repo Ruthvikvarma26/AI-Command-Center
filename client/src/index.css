@@ -1,0 +1,168 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+@theme {
+  --color-cyber-black: #050505;
+  --color-cyber-cyan: #00f3ff;
+  --color-cyber-purple: #bc13fe;
+  --color-cyber-green: #39ff14;
+  --color-cyber-red: #ff003c;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+@keyframes glitch {
+  0%   { transform: translate(0); }
+  20%  { transform: translate(-2px, 2px); }
+  40%  { transform: translate(-2px, -2px); }
+  60%  { transform: translate(2px, 2px); }
+  80%  { transform: translate(2px, -2px); }
+  100% { transform: translate(0); }
+}
+
+@keyframes scanline {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+
+:root {
+  background-color: #050505;
+  color: #ffffff;
+}
+
+body {
+  margin: 0;
+  font-family: 'JetBrains Mono', monospace;
+  overflow-x: hidden;
+}
+
+/* Cyberpunk Grid Background */
+.bg-grid {
+  background-size: 50px 50px;
+  background-image:
+    linear-gradient(to right, rgba(0, 243, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
+  background-attachment: fixed;
+}
+
+/* Scanline Effect */
+.scanlines {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%,
+    rgba(0, 0, 0, 0.25) 50%
+  ),
+  linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.06),
+    rgba(0, 255, 0, 0.02),
+    rgba(0, 0, 255, 0.06)
+  );
+  background-size: 100% 4px, 3px 100%;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.scanline-move {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(0, 243, 255, 0.1),
+    transparent
+  );
+  opacity: 0.1;
+  pointer-events: none;
+  animation: scanline 8s linear infinite;
+  z-index: 101;
+}
+
+/* HUD Panel Style */
+.hud-panel {
+  background-color: rgba(5, 5, 5, 0.8);
+  border: 2px solid var(--color-cyber-cyan);
+  box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+  clip-path: polygon(
+    0 0,
+    95% 0,
+    100% 5%,
+    100% 100%,
+    5% 100%,
+    0 95%
+  );
+}
+
+.hud-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--color-cyber-cyan);
+  box-shadow: 0 0 10px var(--color-cyber-cyan);
+}
+
+/* Glitch Animation for Text */
+.glitch-text:hover {
+  animation: glitch 0.5s cubic-bezier(.25,.46,.45,.94) both infinite;
+  text-shadow: 2px 0 var(--color-cyber-red), -2px 0 var(--color-cyber-cyan);
+}
+
+/* CRT Flicker */
+@keyframes flicker {
+  0% { opacity: 0.97; }
+  5% { opacity: 0.95; }
+  10% { opacity: 0.9; }
+  15% { opacity: 0.95; }
+  20% { opacity: 0.98; }
+  25% { opacity: 0.95; }
+  30% { opacity: 0.99; }
+  35% { opacity: 0.95; }
+  40% { opacity: 0.9; }
+  45% { opacity: 0.95; }
+  50% { opacity: 0.98; }
+  55% { opacity: 0.95; }
+  60% { opacity: 0.99; }
+  65% { opacity: 0.95; }
+  70% { opacity: 0.9; }
+  75% { opacity: 0.95; }
+  80% { opacity: 0.98; }
+  85% { opacity: 0.95; }
+  90% { opacity: 0.99; }
+  95% { opacity: 0.95; }
+  100% { opacity: 1; }
+}
+
+.crt-flicker {
+  animation: flicker 0.15s infinite;
+}
+
+/* Holographic Grid Container */
+.hologram-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.hologram-container::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at center, transparent 30%, rgba(0, 243, 255, 0.05) 70%);
+  pointer-events: none;
+  z-index: 1;
+}
+
