@@ -252,7 +252,7 @@ const Login = () => {
 
             <div className="grid grid-cols-1">
               <a
-                href="http://localhost:5000/auth/google"
+                href="/auth/google"
                 className="flex items-center justify-center gap-2 py-2 border border-white/10 hover:border-cyber-purple hover:bg-cyber-purple/5 transition-all text-[10px] font-bold tracking-widest text-white/60 hover:text-cyber-purple group no-underline"
                 style={{ zIndex: 10003, pointerEvents: 'auto', cursor: 'pointer' }}
               >

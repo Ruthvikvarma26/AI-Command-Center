@@ -20,13 +20,29 @@ passport.deserializeUser(async (id, done) => {
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID || 'dummy-id',
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'dummy-secret',
-    callbackURL: "http://localhost:5000/auth/google/callback"
+    callbackURL: "/auth/google/callback"
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
       let user = await User.findOne({ googleId: profile.id });
       
       if (!user) {
+        // Check if a user with the same email already exists (from manual registration)
+        const email = profile.emails?.[0]?.value;
+        if (email) {
+          user = await User.findOne({ email });
+          if (user) {
+            // Link Google ID to existing manual account
+            user.googleId = profile.id;
+            user.avatar = user.avatar || profile.photos?.[0]?.value || '';
+            await user.save();
+            console.log(`[PASSPORT] Linked Google ID to existing email account: ${email}`);
+          }
+        }
+      }
+
+      if (!user) {
+        // Truly new user - create fresh profile
         user = new User({
           googleId: profile.id,
           displayName: profile.displayName || 'Google User',
@@ -34,6 +50,7 @@ passport.use(new GoogleStrategy({
           avatar: profile.photos?.[0]?.value || ''
         });
         await user.save();
+        console.log(`[PASSPORT] Created fresh Google account: ${user.email}`);
       }
       return done(null, user);
     } catch (err) {

@@ -532,6 +532,8 @@ Keep answers brief and readable.`;
 const buildPath = path.join(__dirname, '../client/dist');
 app.use(express.static(buildPath));
 
+// Health check and Keep-alive endpoints
+app.get('/healthz', (req, res) => res.status(200).send('OK'));
 app.get('/api/ping', (req, res) => res.json({ status: 'READY', timestamp: new Date() }));
 
 // All other GET requests not handled will return the React app (SPA mode)
