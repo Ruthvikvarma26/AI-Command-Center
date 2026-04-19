@@ -547,7 +547,7 @@ app.post('/api/chat-repo', async (req, res) => {
         const repo = match ? match[2].replace(/\.git$/, '') : '';
 
         const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = ai.getGenerativeModel({ model: "gemini-pro" });
 
         const systemMessage = `You are the core intelligence of the "AI Developer Command Center".
 You are analyzing the repository: ${owner}/${repo}.
