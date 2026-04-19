@@ -1,6 +1,6 @@
 require('dotenv').config();
 const path = require('path');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+// Note: Switched to direct REST API Link to bypass SDK v1beta 404 bugs
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
@@ -546,46 +546,50 @@ app.post('/api/chat-repo', async (req, res) => {
         const owner = match ? match[1] : '';
         const repo = match ? match[2].replace(/\.git$/, '') : '';
 
-        const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = ai.getGenerativeModel({ model: "gemini-pro" });
-
         const systemMessage = `You are the core intelligence of the "AI Developer Command Center".
 You are analyzing the repository: ${owner}/${repo}.
 The repository contains ${contextData?.file_count || 0} files.
-Key dependencies include: ${(contextData?.dependencies || []).slice(0, 50).join(', ')}.
-Key directories include: ${(contextData?.folders || []).slice(0, 30).join(', ')}.
+Key dependencies: ${(contextData?.dependencies || []).slice(0, 30).join(', ')}.
+Key folders: ${(contextData?.folders || []).slice(0, 20).join(', ')}.
 
-Your personality is cyberpunk, futuristic, but highly analytical and helpful.
-Answer the user's questions about this codebase concisely.
-If they ask about an implementation detail you don't have the source code for, advise them that you currently only see the structural blueprint and architecture.
-Keep answers brief and readable.`;
+Your personality is cyberpunk, futuristic, but highly analytical.
+Answer questions about this codebase concisely. Keep answers brief.`;
 
-        // Create the prompt with history
-        let promptParts = [systemMessage];
+        // Format history for the REST API
+        let contents = [];
         if (chatHistory && Array.isArray(chatHistory)) {
-            const recentHistory = chatHistory.slice(-10);
-            recentHistory.forEach(msg => {
-                promptParts.push(`${msg.role === 'user' ? 'USER' : 'SYSTEM'}: ${msg.content}`);
-            });
+             chatHistory.slice(-10).forEach(msg => {
+                 contents.push({
+                     role: msg.role === 'user' ? 'user' : 'model',
+                     parts: [{ text: msg.content }]
+                 });
+             });
         }
-        promptParts.push(`USER: ${query}`);
-        promptParts.push("SYSTEM:");
+        
+        // Add current query
+        contents.push({
+            role: 'user',
+            parts: [{ text: `${systemMessage}\n\nUSER_QUERY: ${query}` }]
+        });
 
-        const result = await model.generateContent(promptParts.join("\n\n"));
-        const response = await result.response;
-        const responseText = response.text();
+        // DIRECT REST HANDSHAKE (v1 Stable)
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+        
+        const result = await axios.post(geminiUrl, {
+            contents: contents,
+            generationConfig: {
+                maxOutputTokens: 800,
+                temperature: 0.7
+            }
+        });
 
-        if (!responseText) {
-            throw new Error('AI_EMPTY_RESPONSE: The AI core returned no data. This might be due to safety filters.');
-        }
-
+        const responseText = result.data.candidates[0].content.parts[0].text;
         res.json({ reply: responseText });
+
     } catch (error) {
-        console.error('AI Chat Error:', error);
-        const errorMessage = error.message?.includes('403') ? 'AUTH_ERR: API Key invalid' : 
-                             error.message?.includes('429') ? 'LIMIT_ERR: Rate limit reached' :
-                             error.message || 'INTERNAL_ERROR';
-        res.status(500).json({ error: `AI_CORE_FAILURE: ${errorMessage}` });
+        console.error('AI Direct Link Error:', error.response?.data || error.message);
+        const detailedError = error.response?.data?.error?.message || error.message;
+        res.status(500).json({ error: `AI_CORE_FAILURE: ${detailedError}` });
     }
 });
 
