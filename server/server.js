@@ -547,7 +547,7 @@ app.post('/api/chat-repo', async (req, res) => {
         const repo = match ? match[2].replace(/\.git$/, '') : '';
 
         const ai = new GoogleGenAI(process.env.GEMINI_API_KEY);
-        const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const systemMessage = `You are the core intelligence of the "AI Developer Command Center".
 You are analyzing the repository: ${owner}/${repo}.
@@ -563,7 +563,6 @@ Keep answers brief and readable.`;
         // Create the prompt with history
         let promptParts = [systemMessage];
         if (chatHistory && Array.isArray(chatHistory)) {
-            // Keep only the last 10 turns to stay under token limits
             const recentHistory = chatHistory.slice(-10);
             recentHistory.forEach(msg => {
                 promptParts.push(`${msg.role === 'user' ? 'USER' : 'SYSTEM'}: ${msg.content}`);
@@ -573,12 +572,20 @@ Keep answers brief and readable.`;
         promptParts.push("SYSTEM:");
 
         const result = await model.generateContent(promptParts.join("\n\n"));
-        const responseText = result.response.text();
+        const response = await result.response;
+        const responseText = response.text();
+
+        if (!responseText) {
+            throw new Error('AI_EMPTY_RESPONSE: The AI core returned no data. This might be due to safety filters.');
+        }
 
         res.json({ reply: responseText });
     } catch (error) {
         console.error('AI Chat Error:', error);
-        res.status(500).json({ error: 'Failed to communicate with AI core.' });
+        const errorMessage = error.message?.includes('403') ? 'AUTH_ERR: API Key invalid' : 
+                             error.message?.includes('429') ? 'LIMIT_ERR: Rate limit reached' :
+                             error.message || 'INTERNAL_ERROR';
+        res.status(500).json({ error: `AI_CORE_FAILURE: ${errorMessage}` });
     }
 });
 
