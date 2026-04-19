@@ -1,6 +1,6 @@
 require('dotenv').config();
 const path = require('path');
-const { GoogleGenAI } = require('@google/genai');
+const { GoogleGenAI } = require('@google/generative-ai');
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
