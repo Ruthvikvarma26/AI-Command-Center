@@ -231,10 +231,10 @@ app.get('/auth/google/callback',
     console.log('[AUTH] Received Google Callback!');
     next();
   },
-  passport.authenticate('google', { failureRedirect: 'http://localhost:5173/login?error=google_auth_failed' }),
+  passport.authenticate('google', { failureRedirect: '/login?error=google_auth_failed' }),
   (req, res) => {
     console.log('[AUTH] Google Callback Successful. User:', req.user?.displayName);
-    res.redirect('http://localhost:5173/dashboard?login=success');
+    res.redirect('/dashboard?login=success');
   }
 );
 
