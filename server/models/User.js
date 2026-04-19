@@ -33,7 +33,15 @@ const userSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  repoScans: [{
+    name: String,
+    url: String,
+    scannedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 });
 
 // Middleware to hash password before saving

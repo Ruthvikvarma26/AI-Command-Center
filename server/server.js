@@ -255,6 +255,59 @@ app.get('/api/logout', (req, res) => {
     });
 });
 
+// --- PERMANENT HISTORY API ---
+
+// Get user's repo history
+app.get('/api/user/repos', async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: 'Authentication required' });
+    try {
+        const user = await User.findById(req.user.id);
+        res.json(user.repoScans || []);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to retrieve scan history' });
+    }
+});
+
+// Add repo to user's history
+app.post('/api/user/repos', async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: 'Authentication required' });
+    const { name, url } = req.body;
+    if (!name || !url) return res.status(400).json({ error: 'Repository data missing' });
+
+    try {
+        const user = await User.findById(req.user.id);
+        
+        // Remove existing entry for the same URL to prevent duplicates and move to top
+        user.repoScans = user.repoScans.filter(scan => scan.url !== url);
+        
+        // Add new scan to the beginning of the list
+        user.repoScans.unshift({ name, url, scannedAt: new Date() });
+        
+        // Keep only the last 15 scans
+        if (user.repoScans.length > 15) {
+            user.repoScans = user.repoScans.slice(0, 15);
+        }
+        
+        await user.save();
+        res.json({ success: true, history: user.repoScans });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to record scan' });
+    }
+});
+
+// Clear all history
+app.delete('/api/user/repos/clear', async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: 'Authentication required' });
+    try {
+        const user = await User.findById(req.user.id);
+        user.repoScans = [];
+        await user.save();
+        res.json({ success: true, message: 'Scan history purged' });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to clear history' });
+    }
+});
+
 
 // Helper function to fetch all files recursively from a GitHub repo
 async function getRepoContents(owner, repo, path = '') {

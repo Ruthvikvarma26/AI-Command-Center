@@ -18,10 +18,7 @@ const Dashboard = () => {
   const [data, setData] = useState(null);
   const [summaryData, setSummaryData] = useState(null);
   const [error, setError] = useState(null);
-  const [scans, setScans] = useState(() => {
-    const saved = localStorage.getItem('repoScans');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [scans, setScans] = useState([]);
   const [showLoginSuccess, setShowLoginSuccess] = useState(false);
   const navigate = useNavigate();
   const resultsRef = useRef(null);
@@ -33,22 +30,42 @@ const Dashboard = () => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('login') === 'success') {
       setShowLoginSuccess(true);
-      // Remove query param without refreshing the page
       window.history.replaceState({}, document.title, window.location.pathname);
-      // Auto-hide after 3.5 seconds
       setTimeout(() => setShowLoginSuccess(false), 3500);
     }
+    
+    // Fetch permanent history from DB on load
+    const fetchHistory = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/user/repos`);
+        setScans(response.data);
+      } catch (err) {
+        console.warn('[DASHBOARD] Failed to synchronize history with server.');
+      }
+    };
+    fetchHistory();
   }, []);
 
-  const saveToHistory = (url, name) => {
-    const newScans = [{ url, name }, ...scans.filter(s => s.url !== url)].slice(0, 5);
-    setScans(newScans);
-    localStorage.setItem('repoScans', JSON.stringify(newScans));
+  const saveToHistory = async (url, name) => {
+    try {
+      // Sync to Database
+      const response = await axios.post(`${API_BASE_URL}/api/user/repos`, { name, url });
+      setScans(response.data.history);
+    } catch (err) {
+      console.warn('[DASHBOARD] Could not backup scan to cloud history.');
+      // Local fallback if server fails
+      const newScans = [{ url, name }, ...scans.filter(s => s.url !== url)].slice(0, 10);
+      setScans(newScans);
+    }
   };
 
-  const clearHistory = () => {
-    setScans([]);
-    localStorage.removeItem('repoScans');
+  const clearHistory = async () => {
+    try {
+      await axios.delete(`${API_BASE_URL}/api/user/repos/clear`);
+      setScans([]);
+    } catch (err) {
+      console.error('[DASHBOARD] Failed to purge cloud history.');
+    }
   };
 
   const analyzeRepo = async (repoUrl) => {
