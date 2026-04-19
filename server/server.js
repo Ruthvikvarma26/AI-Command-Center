@@ -587,9 +587,20 @@ Answer questions about this codebase concisely. Keep answers brief.`;
         res.json({ reply: responseText });
 
     } catch (error) {
-        console.error('AI Direct Link Error:', error.response?.data || error.message);
-        const detailedError = error.response?.data?.error?.message || error.message;
-        res.status(500).json({ error: `AI_CORE_FAILURE: ${detailedError}` });
+        const status = error.response?.status;
+        const googleError = error.response?.data?.error;
+        console.error('AI Direct Link Error - Status:', status);
+        console.error('AI Direct Link Error - Google Error:', JSON.stringify(googleError));
+        console.error('AI Direct Link Error - Raw:', error.message);
+        
+        let friendlyError = 'UNKNOWN_ERROR';
+        if (status === 400) friendlyError = 'BAD_REQUEST: Check prompt format';
+        else if (status === 403) friendlyError = 'API_KEY_INVALID or API_NOT_ENABLED in Google Cloud Console';
+        else if (status === 404) friendlyError = `MODEL_NOT_FOUND: Check GEMINI_API_KEY has Gemini API enabled`;
+        else if (status === 429) friendlyError = 'QUOTA_EXCEEDED: Rate limit hit';
+        else friendlyError = googleError?.message || error.message;
+        
+        res.status(500).json({ error: `AI_CORE_FAILURE: ${friendlyError}` });
     }
 });
 
