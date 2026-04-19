@@ -573,7 +573,7 @@ Answer questions about this codebase concisely. Keep answers brief.`;
         });
 
         // DIRECT REST HANDSHAKE (v1 Stable)
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`;
         
         const result = await axios.post(geminiUrl, {
             contents: contents,
