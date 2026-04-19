@@ -546,34 +546,36 @@ app.post('/api/chat-repo', async (req, res) => {
         const owner = match ? match[1] : '';
         const repo = match ? match[2].replace(/\.git$/, '') : '';
 
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const ai = new GoogleGenAI(process.env.GEMINI_API_KEY);
+        const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
         const systemMessage = `You are the core intelligence of the "AI Developer Command Center".
 You are analyzing the repository: ${owner}/${repo}.
 The repository contains ${contextData?.file_count || 0} files.
-Key dependencies include: ${(contextData?.dependencies || []).join(', ')}.
-Key files/folders include: ${(contextData?.files || []).slice(0, 30).join(', ')}.
+Key dependencies include: ${(contextData?.dependencies || []).slice(0, 50).join(', ')}.
+Key directories include: ${(contextData?.folders || []).slice(0, 30).join(', ')}.
 
 Your personality is cyberpunk, futuristic, but highly analytical and helpful.
 Answer the user's questions about this codebase concisely.
 If they ask about an implementation detail you don't have the source code for, advise them that you currently only see the structural blueprint and architecture.
 Keep answers brief and readable.`;
 
-        // Format history into a single prompt for simplicity (RAG-lite approach)
-        let conversationPrompt = systemMessage + "\n\n--- CHAT LOG ---\n";
+        // Create the prompt with history
+        let promptParts = [systemMessage];
         if (chatHistory && Array.isArray(chatHistory)) {
-             chatHistory.forEach(msg => {
-                 conversationPrompt += `\n${msg.role === 'user' ? 'USER' : 'SYSTEM'}: ${msg.content}`;
-             });
+            // Keep only the last 10 turns to stay under token limits
+            const recentHistory = chatHistory.slice(-10);
+            recentHistory.forEach(msg => {
+                promptParts.push(`${msg.role === 'user' ? 'USER' : 'SYSTEM'}: ${msg.content}`);
+            });
         }
-        conversationPrompt += `\nUSER: ${query}\nSYSTEM:`;
+        promptParts.push(`USER: ${query}`);
+        promptParts.push("SYSTEM:");
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: conversationPrompt,
-        });
+        const result = await model.generateContent(promptParts.join("\n\n"));
+        const responseText = result.response.text();
 
-        res.json({ reply: response.text });
+        res.json({ reply: responseText });
     } catch (error) {
         console.error('AI Chat Error:', error);
         res.status(500).json({ error: 'Failed to communicate with AI core.' });
