@@ -1,6 +1,6 @@
 require('dotenv').config();
 const path = require('path');
-const { GoogleGenAI } = require('@google/generative-ai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
@@ -546,7 +546,7 @@ app.post('/api/chat-repo', async (req, res) => {
         const owner = match ? match[1] : '';
         const repo = match ? match[2].replace(/\.git$/, '') : '';
 
-        const ai = new GoogleGenAI(process.env.GEMINI_API_KEY);
+        const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
         const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const systemMessage = `You are the core intelligence of the "AI Developer Command Center".
