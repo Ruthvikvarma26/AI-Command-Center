@@ -529,10 +529,23 @@ app.post('/api/project-summary', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch project summary.' });
     }
 });
+// Simple in-memory rate limiter for AI chat (max 10 requests per minute globally)
+const aiRateLimit = { count: 0, resetAt: Date.now() + 60000 };
 
 app.post('/api/chat-repo', async (req, res) => {
     const { repoUrl, query, chatHistory, contextData } = req.body;
-    
+
+    // Rate limit check - reset counter every minute
+    if (Date.now() > aiRateLimit.resetAt) {
+        aiRateLimit.count = 0;
+        aiRateLimit.resetAt = Date.now() + 60000;
+    }
+    if (aiRateLimit.count >= 10) {
+        const waitSecs = Math.ceil((aiRateLimit.resetAt - Date.now()) / 1000);
+        return res.status(429).json({ error: `RATE_LIMIT: AI core cooling down. Try again in ${waitSecs}s.` });
+    }
+    aiRateLimit.count++;
+
     if (!process.env.GEMINI_API_KEY) {
         return res.status(500).json({ error: 'GEMINI_API_KEY is missing from server configuration.' });
     }
